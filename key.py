@@ -4,19 +4,55 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding as asym_padding
 
 
-def key_response(self, msg_type, data):
-    # Split received message into components
-    key_size = 256  # RSA-2048 encrypted size
-    mac_size = 32   # SHA-256 MAC size
+def key_response(self, msg_type, data, other_public):
+   
+    # print("BEGINNING KEY")
+    
+    message_len = int.from_bytes(data[:4], 'big')
+    received_mac = data[4+message_len:]
+    encrypted_data = data[4:4+message_len]
+    # print("MAC", received_mac)
 
-    encrypted_key = data[:key_size]
-    key_mac = data[key_size:key_size + mac_size]
-    encrypted_seq = data[key_size + mac_size:key_size * 2 + mac_size]
-    seq_mac = data[key_size * 2 + mac_size:]
+    # Decrypt the message to get ephemeral key and sequence number
+    decrypted_data = self.private_key.decrypt(
+        encrypted_data,
+        asym_padding.OAEP(
+            mgf=asym_padding.MGF1(algorithm=hashes.SHA256()),
+            algorithm=hashes.SHA256(),
+            label=None
+        )
+    )
+    
+    ephemeral_key = decrypted_data[:32]
+    seq_number = decrypted_data[32:]
+    # print("ephemeral_key", ephemeral_key)
+    # print("seq_number", seq_number)
 
-    # Decrypt session key and sequence number
-    session_key = self.private_key.decrypt(
-        encrypted_key,
+    message_len = int.from_bytes(decrypted_data[:4], 'big')
+    
+    
+    
+    # print("Encrypted",encrypted_data[:4+message_len] )
+    # Verify MAC
+    h = hmac.HMAC(ephemeral_key, hashes.SHA256())
+    h.update(encrypted_data[:4+message_len] )
+    try:
+        h.verify(received_mac)
+    except Exception:
+        raise ValueError("MAC verification failed")
+    # print("passed_mac")
+
+    # Store the session key and peer sequence number
+    self.symmetric_key = ephemeral_key
+    self.peer_sequence = int.from_bytes(seq_number, 'big')
+
+    # Generate our initial sequence number
+    our_seq = os.urandom(4)  # 32-bit sequence number
+    self.our_sequence = int.from_bytes(our_seq, 'big')
+
+    # Encrypt our sequence number
+    encrypted_seq = other_public.encrypt(
+        our_seq,
         asym_padding.OAEP(
             mgf=asym_padding.MGF1(algorithm=hashes.SHA256()),
             algorithm=hashes.SHA256(),
@@ -24,49 +60,13 @@ def key_response(self, msg_type, data):
         )
     )
 
-    initial_seq = int.from_bytes(
-        self.private_key.decrypt(
-            encrypted_seq,
-            asym_padding.OAEP(
-                mgf=asym_padding.MGF1(algorithm=hashes.SHA256()),
-                algorithm=hashes.SHA256(),
-                label=None
-            )
-        ),
-        'big'
-    )
+    # Create MAC for the encrypted sequence
+    h = hmac.HMAC(ephemeral_key, hashes.SHA256())
+    h.update(encrypted_seq)
+    mac = h.finalize()
+    combined_message = encrypted_seq+mac
 
-    # Verify MACs
-    key_mac_verify = hmac.HMAC(session_key, hashes.SHA256())
-    key_mac_verify.update(session_key)
-    key_mac_verify.verify(key_mac)
+    # Send ACK with encrypted sequence number and MAC
+    self.socket.send_multipart([b"SEQ1", combined_message])
 
-    seq_mac_verify = hmac.HMAC(session_key, hashes.SHA256())
-    seq_mac_verify.update(initial_seq.to_bytes(4, 'big'))
-    seq_mac_verify.verify(seq_mac)
-
-    # Generate and encrypt response sequence number
-    response_seq = int.from_bytes(os.urandom(4), 'big')
-
-    # Create MAC for response sequence
-    resp_seq_mac = hmac.HMAC(session_key, hashes.SHA256())
-    resp_seq_mac.update(response_seq.to_bytes(4, 'big'))
-    resp_seq_mac_value = resp_seq_mac.finalize()
-
-    # Encrypt response sequence with peer's public key
-    encrypted_resp_seq = self.peer_public_key.encrypt(
-        response_seq.to_bytes(4, 'big'),
-        asym_padding.OAEP(
-            mgf=asym_padding.MGF1(algorithm=hashes.SHA256()),
-            algorithm=hashes.SHA256(),
-            label=None
-        )
-    )
-
-    # Store the keys and sequence numbers
-    self.symmetric_key = session_key
-    self.seq_number = initial_seq
-
-    # Send to peer
-    self.socket.send_multipart(
-        [b"KEY", encrypted_resp_seq + resp_seq_mac_value])
+    

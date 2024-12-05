@@ -13,12 +13,14 @@ print("Initiating handshake")
 # thread2.start()
 peer1.askForPublicKey(True)
 time.sleep(0.5)
+peer1.initiate_handshake()
+time.sleep(0.5)
 
 
 print("Sending messages")
 # Send messages (handshake will happen automatically)
-# peer1.send_message("Hello from peer 1")
-# peer2.send_message("Hello from peer 2")
+peer1.send_message("Hello from peer 1")
+peer2.send_message("Hello from peer 2")
 
 time.sleep(1)
 

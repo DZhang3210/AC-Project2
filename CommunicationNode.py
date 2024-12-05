@@ -5,13 +5,23 @@ from cryptography.hazmat.primitives import hashes, padding
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 import os
 import threading
+import hmac
 from cryptography.hazmat.primitives.asymmetric import rsa, padding as asym_padding
 from cryptography.hazmat.primitives import serialization
+from StorageNonceManager import StorageNonceManager
+import struct
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+from cryptography.exceptions import InvalidSignature
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.asymmetric import ec
 
 from key import key_response
 from handshake2 import handshake2_response
 from helo import helo_response
-
+from seq1 import seq1_response
+from handshake1 import handshake1_response
+from encryptMessage import hash_message, sign_message
+from seq2 import seq2_response
 
 class SecurePeer:
     def __init__(self, my_port, peer_port, identity):
@@ -31,7 +41,10 @@ class SecurePeer:
         self.listener_thread = threading.Thread(
             target=self.listen_for_messages)
         self.listener_thread.start()
-
+        self.other_public = None
+        self.our_seq = None
+        self.peer_seq = None
+        self.StorageNonceManager = StorageNonceManager()
         self.generate_keys()
 
     # Helo
@@ -47,27 +60,21 @@ class SecurePeer:
     # Public Key
     # - Ask for Public Key
 
-    def handleHandshake(self, msg_type, data):
+    def handleHandshake(self, msg_type, data, other_public):
         if msg_type == b"HELO":
-            helo_response(self, msg_type,  data)
+            helo_response(self, msg_type,  data, self.private_key, other_public)
         elif msg_type == b"HANDSHAKE1":
-            print(f"Sending handshake response to {self.identity}")
-            self.socket.send_multipart([b"HANDSHAKE2", b"YES"])
+            handshake1_response(self, msg_type, data, self.other_public)
         elif msg_type == b"HANDSHAKE2":
-            handshake2_response(self, msg_type,  data)
+            handshake2_response(self, msg_type,  data, self.other_public)
         elif msg_type == b"KEY":
-            key_response(self, msg_type,  data)
+            key_response(self, msg_type,  data, self.other_public)
         elif msg_type == b"SEQ1":
-            self.seq_number = recv[1]
+            seq1_response(self, msg_type, data)
         elif msg_type == b"SEQ2":
-            self.seq_number = recv[1]
-        elif msg_type == b"TEST1":
-            self.socket.send_multipart([b"TEST2", self.seq_number])
-        elif msg_type == b"TEST2":
-            self.seq_number += 1
-        elif msg_type == b"MESSAGE":
-            decrypted = self.decrypt_message(data)
-            print(f"Received: {decrypted}")
+            print(seq2_response(self, msg_type, data))
+        elif msg_type == b"TEST":
+            print("YOU MADE IT TO THE END!!, TEST1")
 
     # Public Key
 
@@ -96,7 +103,7 @@ class SecurePeer:
 
                 msg_type, data = recv
 
-                self.handleHandshake(msg_type, data)
+                self.handleHandshake(msg_type, data, self.other_public)
 
                 if msg_type == b"MESSAGE" and self.symmetric_key:
                     decrypted = self.decrypt_message(data)
@@ -105,10 +112,12 @@ class SecurePeer:
                 if msg_type == b"PUBLIC_KEY":
                     self.askForPublicKey()
                     public_key = serialization.load_pem_public_key(data)
+                    self.other_public = public_key
                     print(
                         f"Received public key for {self.identity}", public_key)
                 elif msg_type == b"PUBLIC_KEY_RESPONSE":
                     public_key = serialization.load_pem_public_key(data)
+                    self.other_public = public_key
                     print(
                         f"Received public key for {self.identity}", public_key)
             except zmq.Again:
@@ -122,7 +131,7 @@ class SecurePeer:
 
         nonce = os.urandom(16)
         # Add current timestamp to the nonce
-        timestamp = str(int(time.time())).encode()
+        timestamp = str(int(time.time())).zfill(10).encode()
         nonce_with_timestamp = nonce + timestamp
 
         # Encrypt nonce and timestamp with private key
@@ -135,8 +144,12 @@ class SecurePeer:
             hashes.SHA256()
         )
 
+        # Concatenate nonce and encrypted nonce
+        combined_nonce = nonce_with_timestamp + encrypted_nonce
+        
         print(f"Sending handshake to {self.identity}")
-        self.socket.send_multipart([b"HELO", encrypted_nonce])
+        # Send the combined nonce as the second part of the message
+        self.socket.send_multipart([b"HELO", combined_nonce])
 
         # Wait for peer response with timeout
         start_time = time.time()
@@ -147,36 +160,48 @@ class SecurePeer:
         print(f"Handshake to {self.identity} timed out")
         return False
 
-    def encrypt_message(self, message):
-        if not self.symmetric_key:
-            raise Exception(
-                f"Handshake required before sending messages from {self.identity}")
+    def encrypt_message(self, message):   
+        # Create timestamp and combine with message
+        nonce = self.StorageNonceManager.get_nonce()
+        timestamp = struct.pack('>Q', int(time.time()))
+        # Encode the message as bytes before concatenation
+        message_bytes = message.encode('utf-8')
+        timestamped_message = timestamp + message_bytes
+        
+        # Encrypt the message using AES-GCM
+        aesgcm = AESGCM(self.symmetric_key)
+        ct = aesgcm.encrypt(nonce, timestamped_message, None)  # Added None as associated_data parameter
+        hash = hash_message(ct, self.symmetric_key)
+        
+        # Combine nonce, encrypted data, and hash into a single byte string
+        combined_message = nonce + ct + hash
+        
+        return combined_message
 
-        iv = os.urandom(16)
-        padder = padding.PKCS7(128).padder()
-        padded_data = padder.update(message.encode()) + padder.finalize()
+    def decrypt_message(self, encrypted_message):
+        # Extract components using the same structure as encrypt_message
+        nonce = encrypted_message[:12]
+        ct = encrypted_message[12:-32]  # Everything between nonce and hash
+        hash = encrypted_message[-32:]  # Hash is 32 bytes
 
-        cipher = Cipher(algorithms.AES(self.symmetric_key), modes.CBC(iv))
-        encryptor = cipher.encryptor()
-        encrypted = encryptor.update(padded_data) + encryptor.finalize()
+        # Verify the hash
+        expected_hash = hash_message(ct, self.symmetric_key)
+        if not hmac.compare_digest(expected_hash, hash):
+            raise ValueError("Hash verification failed")
 
-        return iv + encrypted
+        # Decrypt the message using the received nonce
+        aesgcm = AESGCM(self.symmetric_key)
+        timestamped_message = aesgcm.decrypt(nonce, ct, None)  # Added None as associated_data parameter
 
-    def decrypt_message(self, encrypted_data):
-        if not self.symmetric_key:
-            raise Exception(
-                f"Handshake required before receiving messages from {self.identity}")
+        # Extract the timestamp and original message
+        timestamp = struct.unpack('>Q', timestamped_message[:8])[0]
+        message = timestamped_message[8:].decode('utf-8')
 
-        iv = encrypted_data[:16]
-        encrypted = encrypted_data[16:]
+        # Optionally, check if the message is too old
+        if time.time() - timestamp > 60:  # 60 seconds tolerance
+            raise ValueError("Message is too old")
 
-        cipher = Cipher(algorithms.AES(self.symmetric_key), modes.CBC(iv))
-        decryptor = cipher.decryptor()
-        padded_data = decryptor.update(encrypted) + decryptor.finalize()
-
-        unpadder = padding.PKCS7(128).unpadder()
-        data = unpadder.update(padded_data) + unpadder.finalize()
-        return data.decode()
+        return message
 
     def send_message(self, message):
         if not self.symmetric_key:

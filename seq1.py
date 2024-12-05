@@ -5,28 +5,44 @@ from cryptography.hazmat.primitives import padding
 
 
 def seq1_response(self, msg_type, data):
-    self.seq_number = data
+    print("Got to SEQ1")
+    # Split the received data into encrypted payload and MAC
+    encrypted_seq = data[:-32]  # MAC is 32 bytes (SHA256)
+    received_mac = data[-32:]
+    
+    # Verify MAC using symmetric key
+    h = hmac.HMAC(self.symmetric_key, hashes.SHA256())
+    h.update(encrypted_seq)
+    try:
+        h.verify(received_mac)
+    except Exception:
+        raise ValueError("MAC verification failed")
+    
+    print("Passed MAC for SEQ2")
 
-    # Trying to code {encrypted(random initial seq # + ack)} + MAC
-    initial_seq = os.urandom(4)
+    # # Trying to code {encrypted(random initial seq # + ack)} + MAC
+    # initial_seq = os.urandom(4)
 
-    # Grab MAC
-    mac = data[256:]
+    # # Prep payload
+    # ack = b"ACK"
+    # payload = ack + initial_seq
 
-    # Prep payload
-    ack = b"ACK"
-    payload = ack + initial_seq
+    # # Encrypting payload using AES
+    # iv = os.urandom(16)
+    # cipher = Cipher(algorithms.AES(self.symmetric_key),
+    #                 modes.CBC(iv))
+    # encryptor = cipher.encryptor()
 
-    # Encrypting payload using AES
-    iv = os.urandom(16)
-    cipher = Cipher(algorithms.AES(self.symmetric_key),
-                    modes.CBC(iv))  # TODO Should we switch to GCM?
-    encryptor = cipher.encryptor()
+    # padder = padding.PKCS7(128).padder()
+    # padded_data = padder.update(payload) + padder.finalize()
+    # encrypted_payload = encryptor.update(padded_data) + encryptor.finalize()
 
-    padder = padding.PKCS7(128).padder()
-    padded_data = padder.update(payload) + padder.finalize()
-    encrypted_payload = encryptor.update(padded_data) + encryptor.finalize()
+    # # Create new MAC for our response
+    # h = hmac.HMAC(self.symmetric_key, hashes.SHA256())
+    # h.update(iv + encrypted_payload)
+    # new_mac = h.finalize()
 
     # Send the message
-    # TODO Don't know if we need to create a new MAC
-    self.socket.send_multipart([b"SEQ1", iv + encrypted_payload + mac])
+    encrypted_payload = self.encrypt_message("test")
+    print("Successfully Encrypted Payload")
+    self.socket.send_multipart([b"SEQ2", encrypted_payload])
