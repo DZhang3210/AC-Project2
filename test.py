@@ -44,3 +44,7 @@ def test1_response(self, msg_type, data):
     # Send the acknowledgement message
     self.socket.send_multipart(
         [b"TEST1", new_iv + new_encrypted_payload + mac])
+
+
+def test2_response(self, msg_type, data):
+    print("end of communication")   # TODO Do we stop here?
