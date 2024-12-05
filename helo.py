@@ -1,6 +1,7 @@
 import time
-from cryptography.hazmat.primitives import asym_padding
+from cryptography.hazmat.primitives import hmac
 from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.asymmetric import padding as asym_padding
     
 def helo_response(self, msg_type, data):
     timestamp = str(int(time.time())).encode()

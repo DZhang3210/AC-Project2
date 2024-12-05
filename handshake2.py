@@ -1,8 +1,7 @@
 import os
 from cryptography.hazmat.primitives import hmac
 from cryptography.hazmat.primitives import hashes
-import time
-from cryptography.hazmat.primitives import asym_padding
+from cryptography.hazmat.primitives.asymmetric import padding as asym_padding
 
 def handshake2_response(self, msg_type, data):
      # Generate ephemeral session key and initial sequence number

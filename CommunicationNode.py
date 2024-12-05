@@ -7,7 +7,7 @@ import os
 import threading
 from cryptography.hazmat.primitives.asymmetric import rsa, padding as asym_padding
 from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.primitives import hmac
+
 from key import key_response
 from handshake2 import handshake2_response
 from helo import helo_response
@@ -103,10 +103,10 @@ class SecurePeer:
                 if msg_type == b"PUBLIC_KEY":
                     self.askForPublicKey()
                     public_key = serialization.load_pem_public_key(data)
-                    print(f"Received public key from {self.identity}", public_key)
+                    print(f"Received public key for {self.identity}", public_key)
                 elif msg_type == b"PUBLIC_KEY_RESPONSE":
                     public_key = serialization.load_pem_public_key(data)
-                    print(f"Received public key from {self.identity}", public_key)
+                    print(f"Received public key for {self.identity}", public_key)
             except zmq.Again:
                 time.sleep(0.1)
             except Exception as e:

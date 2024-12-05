@@ -1,8 +1,7 @@
 import os
 from cryptography.hazmat.primitives import hmac
 from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives import asym_padding
-
+from cryptography.hazmat.primitives.asymmetric import padding as asym_padding
 def key_response(self, msg_type, data):
     # Split received message into components
     key_size = 256  # RSA-2048 encrypted size
