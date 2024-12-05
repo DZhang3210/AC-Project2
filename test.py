@@ -3,7 +3,7 @@ from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.primitives import padding
 
 
-def seq2_response(self, msg_type, data):
+def test1_response(self, msg_type, data):
     # Seperate data
     iv = data[:16]
     encrypted_payload = data[16:-32]
@@ -20,15 +20,15 @@ def seq2_response(self, msg_type, data):
     unpadder = padding.PKCS7(128).unpadder()
     payload = unpadder.update(padded_data) + unpadder.finalize()
 
-    # Seperate acknowledgement and random sequence
-    ack = payload[:3]
-    random_seq = payload[3:]
+    # Seperate test message and random sequence
+    test_msg = payload[:-4]
+    random_seq = payload[-4:]
 
-    print(f"Acknowledgement recieved: {ack.decode()}")
+    print(f"Test message recieved: {test_msg.decode()}")
 
     # Prep new payload
-    test_msg = b"testing, testing, 1, 2, 3"
-    new_payload = test_msg + random_seq
+    ack = b"ACK"
+    new_payload = ack + random_seq
 
     # Encrypting new payload using AES
     new_iv = os.urandom(16)
@@ -41,5 +41,6 @@ def seq2_response(self, msg_type, data):
     new_encrypted_payload = encryptor.update(
         new_padded_data) + encryptor.finalize()
 
-    # Send the test message
-    self.socket.send_multipart([b"SEQ2", new_iv + new_encrypted_payload + mac])
+    # Send the acknowledgement message
+    self.socket.send_multipart(
+        [b"TEST1", new_iv + new_encrypted_payload + mac])

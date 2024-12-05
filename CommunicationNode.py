@@ -12,6 +12,7 @@ from key import key_response
 from handshake2 import handshake2_response
 from helo import helo_response
 from seq1 import seq1_response
+from seq2 import seq2_response
 
 
 class SecurePeer:
@@ -59,10 +60,11 @@ class SecurePeer:
         elif msg_type == b"KEY":
             key_response(self, msg_type, data)
         elif msg_type == b"SEQ1":
-            self.seq_number = recv[1]
+            # self.seq_number = recv[1]
             seq1_response(self, msg_type, data)
         elif msg_type == b"SEQ2":
-            self.seq_number = recv[1]
+            # self.seq_number = recv[1]
+            seq2_response(self, msg_type, data)
         elif msg_type == b"TEST1":
             self.socket.send_multipart([b"TEST2", self.seq_number])
         elif msg_type == b"TEST2":
