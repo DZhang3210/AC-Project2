@@ -20,7 +20,7 @@ def seq1_response(self, msg_type, data):
     # Encrypting payload using AES
     iv = os.urandom(16)
     cipher = Cipher(algorithms.AES(self.symmetric_key),
-                    modes.CBC(iv))  # Should we switch to GCM?
+                    modes.CBC(iv))  # TODO Should we switch to GCM?
     encryptor = cipher.encryptor()
 
     padder = padding.PKCS7(128).padder()
@@ -28,5 +28,5 @@ def seq1_response(self, msg_type, data):
     encrypted_payload = encryptor.update(padded_data) + encryptor.finalize()
 
     # Send the message
-    # Don't know if we need to create a new MAC
+    # TODO Don't know if we need to create a new MAC
     self.socket.send_multipart([b"SEQ1", iv + encrypted_payload + mac])
