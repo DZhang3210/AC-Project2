@@ -11,6 +11,7 @@ from cryptography.hazmat.primitives import serialization
 from key import key_response
 from handshake2 import handshake2_response
 from helo import helo_response
+from seq1 import seq1_response
 
 
 class SecurePeer:
@@ -49,16 +50,17 @@ class SecurePeer:
 
     def handleHandshake(self, msg_type, data):
         if msg_type == b"HELO":
-            helo_response(self, msg_type,  data)
+            helo_response(self, msg_type, data)
         elif msg_type == b"HANDSHAKE1":
             print(f"Sending handshake response to {self.identity}")
             self.socket.send_multipart([b"HANDSHAKE2", b"YES"])
         elif msg_type == b"HANDSHAKE2":
-            handshake2_response(self, msg_type,  data)
+            handshake2_response(self, msg_type, data)
         elif msg_type == b"KEY":
-            key_response(self, msg_type,  data)
+            key_response(self, msg_type, data)
         elif msg_type == b"SEQ1":
             self.seq_number = recv[1]
+            seq1_response(self, msg_type, data)
         elif msg_type == b"SEQ2":
             self.seq_number = recv[1]
         elif msg_type == b"TEST1":
