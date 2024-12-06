@@ -1,7 +1,6 @@
 import zmq
 import time
 import threading
-import hmac
 from cryptography.hazmat.primitives import serialization
 from StorageNonceManager import StorageNonceManager
 from handshakeSteps.handleHandshake import handleHandshake
@@ -19,21 +18,26 @@ class SecurePeer:
         self.context = zmq.Context()
         self.socket = self.context.socket(zmq.PUB)
         self.socket.bind(f"tcp://*:{my_port}")
-
         self.subscriber = self.context.socket(zmq.SUB)
         self.subscriber.connect(f"tcp://localhost:{peer_port}")
         self.subscriber.setsockopt_string(zmq.SUBSCRIBE, "")
 
-        self.symmetric_key = None
         self.listening = True
         self.listener_thread = threading.Thread(
             target=self.listen_for_messages)
         self.listener_thread.start()
+
+        #Constants
+        self.message_ttl = 60
+        self.StorageNonceManager = StorageNonceManager()
+
+        #Session specific
+        self.symmetric_key = None
         self.other_public = None
         self.our_seq = None
         self.peer_seq = None
-        self.message_ttl = 60
-        self.StorageNonceManager = StorageNonceManager()
+        
+        
         self.generate_keys()
 
     # Helo
@@ -88,13 +92,11 @@ class SecurePeer:
                     self.askForPublicKey()
                     public_key = serialization.load_pem_public_key(data)
                     self.other_public = public_key
-                    print(
-                        f"Received public key for {self.identity}", public_key)
+                    print(f"Received public key for {self.identity}", public_key)
                 elif msg_type == b"PUBLIC_KEY_RESPONSE":
                     public_key = serialization.load_pem_public_key(data)
                     self.other_public = public_key
-                    print(
-                        f"Received public key for {self.identity}", public_key)
+                    print(f"Received public key for {self.identity}", public_key)
             except zmq.Again:
                 time.sleep(0.1)
             except Exception as e:
