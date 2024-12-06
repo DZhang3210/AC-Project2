@@ -1,22 +1,7 @@
 from cryptography.exceptions import InvalidSignature
 import time
-from cryptography.hazmat.primitives import hmac
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding as asym_padding
-import os    
-
-def handshake1_response(self, msg_type, data, other_public):
-    print("Helo_Response")
-    nonce, result = verify_signature(data, other_public)
-    if not result:
-        print("Helo failed")
-        return 
-    print("Verified handshake1")
-
-
-    print(f"Sending HANDSHAKE2 from {self.identity}")
-    self.socket.send_multipart([b"HANDSHAKE2", b"TODO:Certificate"])
-
 
 def verify_signature(data, peer_public_key, max_age_seconds=5):
     print("Verifying Signature")

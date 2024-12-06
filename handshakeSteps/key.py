@@ -4,7 +4,7 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding as asym_padding
 
 
-def key_response(self, msg_type, data, other_public):
+def key_response(self, data):
    
     # print("BEGINNING KEY")
     
@@ -51,7 +51,7 @@ def key_response(self, msg_type, data, other_public):
     self.our_sequence = int.from_bytes(our_seq, 'big')
 
     # Encrypt our sequence number
-    encrypted_seq = other_public.encrypt(
+    encrypted_seq = self.other_public.encrypt(
         our_seq,
         asym_padding.OAEP(
             mgf=asym_padding.MGF1(algorithm=hashes.SHA256()),

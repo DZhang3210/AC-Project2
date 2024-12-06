@@ -4,7 +4,7 @@ from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.primitives import padding
 
 
-def seq1_response(self, msg_type, data):
+def seq1_response(self, data):
     print("Got to SEQ1")
     # Split the received data into encrypted payload and MAC
     encrypted_seq = data[:-32]  # MAC is 32 bytes (SHA256)
