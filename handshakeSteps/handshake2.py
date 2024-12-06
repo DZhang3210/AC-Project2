@@ -10,10 +10,10 @@ def handshake2_response(self):
     seq_number = os.urandom(4)
     self.our_seq = seq_number
     # Print sizes for debugging
-    
+
     # Concatenate before encryption
     message = ephemeral_key + seq_number
-    
+
     encrypted_message = self.other_public.encrypt(
         message,
         asym_padding.OAEP(
@@ -22,13 +22,13 @@ def handshake2_response(self):
             label=None
         )
     )
-    
+
     h = hmac.HMAC(ephemeral_key, hashes.SHA256())
     h.update(encrypted_message)
     mac = h.finalize()
 
     message_len = len(encrypted_message).to_bytes(4, 'big')
     combined_message = message_len + encrypted_message + mac
-    # print(f"Total message size: {len(combined_message)}")
-    
+
+    print(f"[HANDSHAKE2]: Continuing to KEY from {self.identity}")
     return self.socket.send_multipart([b"KEY", combined_message])
