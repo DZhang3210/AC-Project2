@@ -27,13 +27,4 @@ def initiate_handshake(self):
     
     print(f"Sending handshake to {self.identity}")
     # Send the combined nonce as the second part of the message
-    self.socket.send_multipart([b"HELO", combined_nonce])
-
-    # Wait for peer response with timeout
-    start_time = time.time()
-    while time.time() - start_time < 5:  # 5 second timeout
-        if self.symmetric_key:
-            return True
-        time.sleep(0.1)
-    print(f"Handshake to {self.identity} timed out")
-    return False
+    self.socket.send_multipart([b"HELO1", combined_nonce])
