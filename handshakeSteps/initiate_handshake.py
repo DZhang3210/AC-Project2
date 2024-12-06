@@ -3,6 +3,7 @@ import time
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding as asym_padding
 
+
 def initiate_handshake(self):
     if self.symmetric_key:
         return True
@@ -24,7 +25,7 @@ def initiate_handshake(self):
 
     # Concatenate nonce and encrypted nonce
     combined_nonce = nonce_with_timestamp + encrypted_nonce
-    
+
     print(f"Sending handshake to {self.identity}")
     # Send the combined nonce as the second part of the message
-    self.socket.send_multipart([b"HELO1", combined_nonce])
+    self.socket.send_multipart([b"HELO", combined_nonce])
