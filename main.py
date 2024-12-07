@@ -1,26 +1,36 @@
 import time
 from CommunicationNode import SecurePeer
 
-peer1 = SecurePeer(5555, 5556, "peer1")
-peer2 = SecurePeer(5556, 5555, "peer2")
 
-time.sleep(0.5)
+# peer1 = SecurePeer(5555, 5556, "peer1")
+# peer2 = SecurePeer(5556, 5555, "peer2")
+peer1 = None
 
-print("Initiating handshake")
-peer1.askForPublicKey(True)
-time.sleep(0.5)
-peer1.initiate_handshake()
-time.sleep(0.5)
-
-
-print("Sending messages")
-# Send messages (handshake will happen automatically)
-peer1.send_message("Hello from peer 1")
-peer2.send_message("Hello from peer 2")
+main_port = input("Choose main port: ")
+sub_port = input("Choose sub port: ")
+peer1 = SecurePeer(main_port, sub_port, "peer1")
 
 time.sleep(1)
+while not peer1.get_live_port():
+    peer1.live_ping()
+    print("Waiting for live response")
+    time.sleep(0.3)
+
+print("Live port found")
+
+time.sleep(1)
+
+print("Sending messages")
+while True:
+    sender = input("Send a message (q to quit): ")
+    if sender.lower() == 'q':
+        break
+        
+    message = input("Enter message: ")
+    
+    peer1.send_message(message)
+
 
 print("Closing peers")
 # Clean up
 peer1.close()
-peer2.close()
