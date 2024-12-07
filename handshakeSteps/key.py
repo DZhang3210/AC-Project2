@@ -2,7 +2,7 @@ import os
 from cryptography.hazmat.primitives import hmac
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding as asym_padding
-
+from helperFunctions.hash_message import hash_message, verify_hash
 
 def key_response(self, data):
     message_len = int.from_bytes(data[:4], 'big')
@@ -25,11 +25,8 @@ def key_response(self, data):
     message_len = int.from_bytes(decrypted_data[:4], 'big')
 
     # Verify MAC
-    h = hmac.HMAC(ephemeral_key, hashes.SHA256())
-    h.update(encrypted_data[:4+message_len])
-    try:
-        h.verify(received_mac)
-    except Exception:
+    verified = verify_hash(encrypted_data[:4+message_len], ephemeral_key, received_mac)
+    if not verified:
         raise ValueError("[KEY]: MAC verification failed")
 
     # Store the session key and peer sequence number
@@ -51,9 +48,8 @@ def key_response(self, data):
     )
 
     # Create MAC for the encrypted sequence
-    h = hmac.HMAC(ephemeral_key, hashes.SHA256())
-    h.update(encrypted_seq)
-    mac = h.finalize()
+
+    mac = hash_message(encrypted_seq, ephemeral_key)
     combined_message = encrypted_seq + mac
 
     # Send ACK with encrypted sequence number and MAC

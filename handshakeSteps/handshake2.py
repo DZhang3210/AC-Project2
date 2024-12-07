@@ -2,7 +2,7 @@ import os
 from cryptography.hazmat.primitives import hmac
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding as asym_padding
-
+from helperFunctions.hash_message import hash_message
 
 def handshake2_response(self):
     ephemeral_key = os.urandom(32)
@@ -23,9 +23,7 @@ def handshake2_response(self):
         )
     )
 
-    h = hmac.HMAC(ephemeral_key, hashes.SHA256())
-    h.update(encrypted_message)
-    mac = h.finalize()
+    mac = hash_message(encrypted_message, ephemeral_key)
 
     message_len = len(encrypted_message).to_bytes(4, 'big')
     combined_message = message_len + encrypted_message + mac

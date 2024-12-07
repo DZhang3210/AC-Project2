@@ -18,6 +18,6 @@ def handleHandshake(self, msg_type, data):
     elif msg_type == b"SEQ1":
         seq1_response(self, data)
     elif msg_type == b"SEQ2":
-        print(seq2_response(self, data))
+        seq2_response(self, data)
     elif msg_type == b"TEST":
         print("[TEST]: Test finished, secure comms channel established")
