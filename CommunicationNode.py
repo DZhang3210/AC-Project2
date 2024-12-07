@@ -65,11 +65,11 @@ class SecurePeer:
         return self.live_port
     def live_ping(self, respond=False):
         
-        if not respond:
-            print(self.identity, "pinging")
+        if respond:
+            # print(self.identity, "pinging")
             self.socket.send_multipart([b"LIVE_PONG", b""])
         else:
-            print(self.identity, "ponging")
+            # print(self.identity, "ponging")
             self.socket.send_multipart([b"LIVE_PING", b""])
             
     def askForPublicKey(self, initiate=False):
@@ -83,7 +83,7 @@ class SecurePeer:
             # print(f"Sending public key to {self.identity}")
             self.socket.send_multipart([b"PUBLIC_KEY", public_pem])
         else:
-            print(f"Sending public key response to {self.identity}")
+            # print(f"Sending public key response to {self.identity}")
             self.socket.send_multipart([b"PUBLIC_KEY_RESPONSE", public_pem])
 
     def listen_for_messages(self):
@@ -101,12 +101,11 @@ class SecurePeer:
 
                 if msg_type == b"MESSAGE" and self.symmetric_key:
                     decrypted = self.decrypt_message(data)
-                    print("decrypted", decrypted)
+                    print("\ndecrypted", decrypted)
                 elif msg_type == b"LIVE_PING" or msg_type == b"LIVE_PONG":
                     if msg_type == b"LIVE_PING":
                         self.live_ping(respond=True)
-
-                        time.sleep(0.5)
+                        print("PING AND HANDSHAKE")
                         print("Asking for public key")
                         self.askForPublicKey(True)
                         time.sleep(0.5)

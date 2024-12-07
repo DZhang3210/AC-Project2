@@ -18,11 +18,11 @@ while not peer1.get_live_port():
 
 print("Live port found")
 
-time.sleep(1)
+time.sleep(10)
 
 print("Sending messages")
 while True:
-    sender = input("Send a message (q to quit): ")
+    sender = input("(q to quit or other to send): ")
     if sender.lower() == 'q':
         break
         

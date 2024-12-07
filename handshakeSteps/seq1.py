@@ -13,5 +13,5 @@ def seq1_response(self, data):
     encrypted_payload = self.encrypt_message("test")
 
     # Send the message
-    print(f"[SEQ1]: Continuing to SEQ2 from {self.identity}")
+    # print(f"[SEQ1]: Continuing to SEQ2 from {self.identity}")
     self.socket.send_multipart([b"SEQ2", encrypted_payload])

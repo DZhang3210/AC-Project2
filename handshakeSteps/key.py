@@ -53,5 +53,5 @@ def key_response(self, data):
     combined_message = encrypted_seq + mac
 
     # Send ACK with encrypted sequence number and MAC
-    print(f"[KEY]: Continuing to SEQ1 from {self.identity}")
+    # print(f"[KEY]: Continuing to SEQ1 from {self.identity}")
     self.socket.send_multipart([b"SEQ1", combined_message])

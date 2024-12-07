@@ -28,5 +28,5 @@ def helo_response(self, data):
     )
     combined_nonce = nonce_with_timestamp + encrypted_nonce
 
-    print(f"[HELO]: Continuing to HANDSHAKE1 from {self.identity}")
+    # print(f"[HELO]: Continuing to HANDSHAKE1 from {self.identity}")
     self.socket.send_multipart([b"HANDSHAKE1", combined_nonce])

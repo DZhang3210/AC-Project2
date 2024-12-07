@@ -28,5 +28,5 @@ def handshake2_response(self):
     message_len = len(encrypted_message).to_bytes(4, 'big')
     combined_message = message_len + encrypted_message + mac
 
-    print(f"[HANDSHAKE2]: Continuing to KEY from {self.identity}")
+    # print(f"[HANDSHAKE2]: Continuing to KEY from {self.identity}")
     return self.socket.send_multipart([b"KEY", combined_message])

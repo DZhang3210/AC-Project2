@@ -8,6 +8,6 @@ def handshake1_response(self, data):
         return
     # print("[HANDSHAKE1]: Verified handshake request")
 
-    print(f"[HANDSHAKE1]: Continuing to  HANDSHAKE2 from {self.identity}")
+    # print(f"[HANDSHAKE1]: Continuing to  HANDSHAKE2 from {self.identity}")
     # b'0' is just a placeholder, doesn't actually do anything
     self.socket.send_multipart([b"HANDSHAKE2", b'0'])
