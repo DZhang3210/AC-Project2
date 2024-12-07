@@ -8,15 +8,15 @@ def seq1_response(self, data):
     # Split the received data into encrypted payload and MAC
     encrypted_seq = data[:-32]  # MAC is 32 bytes (SHA256)
     received_mac = data[-32:]
-    
+
     # Verify MAC using symmetric key
     h = hmac.HMAC(self.symmetric_key, hashes.SHA256())
     h.update(encrypted_seq)
     try:
         h.verify(received_mac)
     except Exception:
-        raise ValueError("MAC verification failed")
-    
+        raise ValueError("[SEQ1]: MAC verification failed")
+
     # # Trying to code {encrypted(random initial seq # + ack)} + MAC
     # initial_seq = os.urandom(4)
 
@@ -39,7 +39,8 @@ def seq1_response(self, data):
     # h.update(iv + encrypted_payload)
     # new_mac = h.finalize()
 
-    # Send the message
     encrypted_payload = self.encrypt_message("test")
-    print("Sending SEQ2 from", self.identity)
+
+    # Send the message
+    print(f"[SEQ1]: Continuing to SEQ2 from {self.identity}")
     self.socket.send_multipart([b"SEQ2", encrypted_payload])

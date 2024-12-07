@@ -1,0 +1,19 @@
+Initiating handshake
+Sending public key response to peer2
+Received public key for peer2 <cryptography.hazmat.backends.openssl.rsa._RSAPublicKey object at 0x7d00cf3a3400>
+Received public key for peer1 <cryptography.hazmat.backends.openssl.rsa._RSAPublicKey object at 0x7d00cf3a3490>
+Sending handshake to peer1
+Verifying Signature
+[HELO]: Continuing to HANDSHAKE1 from peer2
+Verifying Signature
+[HANDSHAKE1]: Continuing to  HANDSHAKE2 from peer1
+[HANDSHAKE2]: Continuing to KEY from peer2
+[KEY]: Continuing to SEQ1 from peer1
+[SEQ1]: Continuing to SEQ2 from peer2
+[SEQ2]: Continuing to TEST from peer1
+None
+[TEST]: Test finished, secure comms channel established
+Sending messages
+Received: Hello from peer 1
+Received: Hello from peer 2
+Closing peers

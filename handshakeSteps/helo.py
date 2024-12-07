@@ -2,21 +2,21 @@ from cryptography.exceptions import InvalidSignature
 import time
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding as asym_padding
-import os    
+import os
 from helperFunctions.verify_signature import verify_signature
+
 
 def helo_response(self, data):
     nonce, result = verify_signature(data, self.other_public)
     if not result:
-        print("Helo failed")
-        return 
+        print("[HELO]: Helo failed")
+        return
 
     nonce = os.urandom(16)
-        # Add current timestamp to the nonce
+    # Add current timestamp to the nonce
     timestamp = str(int(time.time())).zfill(10).encode()
     nonce_with_timestamp = nonce + timestamp
 
-    
     # Encrypt nonce and timestamp with private key
     encrypted_nonce = self.private_key.sign(
         nonce_with_timestamp,
@@ -28,8 +28,5 @@ def helo_response(self, data):
     )
     combined_nonce = nonce_with_timestamp + encrypted_nonce
 
-
-    print(f"Sending HANDSHAKE1 from {self.identity}")
+    print(f"[HELO]: Continuing to HANDSHAKE1 from {self.identity}")
     self.socket.send_multipart([b"HANDSHAKE1", combined_nonce])
-
-
