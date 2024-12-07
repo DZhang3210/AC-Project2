@@ -1,3 +1,5 @@
+import os
+
 class PublicKeyManager:
     def __init__(self):
         self.public_key = os.urandom(16)

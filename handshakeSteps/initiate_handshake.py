@@ -25,6 +25,6 @@ def initiate_handshake(self):
     # Concatenate nonce and encrypted nonce
     combined_nonce = nonce_with_timestamp + encrypted_nonce
     
-    print(f"Sending handshake to {self.identity}")
+    print(f"Sending HELO to {self.identity}")
     # Send the combined nonce as the second part of the message
-    self.socket.send_multipart([b"HELO1", combined_nonce])
+    self.socket.send_multipart([b"HELO", combined_nonce])

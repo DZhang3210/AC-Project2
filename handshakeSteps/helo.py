@@ -6,14 +6,10 @@ import os
 from helperFunctions.verify_signature import verify_signature
 
 def helo_response(self, data):
-    print("Helo_Response")
     nonce, result = verify_signature(data, self.other_public)
     if not result:
         print("Helo failed")
         return 
-    print("Verified Helo")
-
-
 
     nonce = os.urandom(16)
         # Add current timestamp to the nonce

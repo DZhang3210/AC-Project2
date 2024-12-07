@@ -5,7 +5,6 @@ from cryptography.hazmat.primitives import padding
 
 
 def seq1_response(self, data):
-    print("Got to SEQ1")
     # Split the received data into encrypted payload and MAC
     encrypted_seq = data[:-32]  # MAC is 32 bytes (SHA256)
     received_mac = data[-32:]
@@ -18,8 +17,6 @@ def seq1_response(self, data):
     except Exception:
         raise ValueError("MAC verification failed")
     
-    print("Passed MAC for SEQ2")
-
     # # Trying to code {encrypted(random initial seq # + ack)} + MAC
     # initial_seq = os.urandom(4)
 
@@ -44,5 +41,5 @@ def seq1_response(self, data):
 
     # Send the message
     encrypted_payload = self.encrypt_message("test")
-    print("Successfully Encrypted Payload")
+    print("Sending SEQ2 from", self.identity)
     self.socket.send_multipart([b"SEQ2", encrypted_payload])

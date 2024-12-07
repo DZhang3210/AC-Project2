@@ -4,7 +4,6 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding as asym_padding
 
 def verify_signature(data, peer_public_key, max_age_seconds=5):
-    print("Verifying Signature")
     try:
         combined_nonce = data
         if len(combined_nonce) < 16:

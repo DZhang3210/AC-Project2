@@ -8,13 +8,12 @@ from handshakeSteps.initiate_handshake import initiate_handshake
 from helperFunctions.encryptMessage import encrypt_message
 from helperFunctions.decryptMessage import decrypt_message
 from helperFunctions.generateKeys import generate_keys
-from helperFunctions.hash_message import hash_message
+from helperFunctions.publicKey import public_key_handler
+
 
 class SecurePeer:
     def __init__(self, my_port, peer_port, identity):
-        self.public_key = None
-        self.private_key = None
-        self.identity = identity
+        
         self.context = zmq.Context()
         self.socket = self.context.socket(zmq.PUB)
         self.socket.bind(f"tcp://*:{my_port}")
@@ -22,6 +21,7 @@ class SecurePeer:
         self.subscriber.connect(f"tcp://localhost:{peer_port}")
         self.subscriber.setsockopt_string(zmq.SUBSCRIBE, "")
 
+        #Listening
         self.listening = True
         self.listener_thread = threading.Thread(
             target=self.listen_for_messages)
@@ -29,6 +29,9 @@ class SecurePeer:
 
         #Constants
         self.message_ttl = 60
+        self.public_key = None
+        self.private_key = None
+        self.identity = identity    #Name of the peer
         self.StorageNonceManager = StorageNonceManager()
 
         #Session specific
@@ -36,7 +39,7 @@ class SecurePeer:
         self.other_public = None
         self.our_seq = None
         self.peer_seq = None
-        
+        self.live_port = False
         
         self.generate_keys()
 
@@ -55,8 +58,20 @@ class SecurePeer:
 
  
 
-    # Public Key
-
+    #Toggle live port
+    def toggle_live_port(self):
+        self.live_port = not self.live_port
+    def get_live_port(self):
+        return self.live_port
+    def live_ping(self, respond=False):
+        
+        if not respond:
+            print(self.identity, "pinging")
+            self.socket.send_multipart([b"LIVE_PONG", b""])
+        else:
+            print(self.identity, "ponging")
+            self.socket.send_multipart([b"LIVE_PING", b""])
+            
     def askForPublicKey(self, initiate=False):
         # Serialize the public key to PEM format
         public_pem = self.public_key.public_bytes(
@@ -86,17 +101,25 @@ class SecurePeer:
 
                 if msg_type == b"MESSAGE" and self.symmetric_key:
                     decrypted = self.decrypt_message(data)
-                    print(f"Received: {decrypted}")
+                    print("decrypted", decrypted)
+                elif msg_type == b"LIVE_PING" or msg_type == b"LIVE_PONG":
+                    if msg_type == b"LIVE_PING":
+                        self.live_ping(respond=True)
 
-                if msg_type == b"PUBLIC_KEY":
-                    self.askForPublicKey()
-                    public_key = serialization.load_pem_public_key(data)
-                    self.other_public = public_key
-                    print(f"Received public key for {self.identity}", public_key)
-                elif msg_type == b"PUBLIC_KEY_RESPONSE":
-                    public_key = serialization.load_pem_public_key(data)
-                    self.other_public = public_key
-                    print(f"Received public key for {self.identity}", public_key)
+                        time.sleep(0.5)
+                        print("Asking for public key")
+                        self.askForPublicKey(True)
+                        time.sleep(0.5)
+                        print("Initiating handshake")
+                        self.initiate_handshake()
+                        time.sleep(0.5)
+                        print("Handshake complete")
+                    else:
+                        print(self.identity, "ponged")
+                    self.toggle_live_port()
+                else:
+                    public_key_handler(self, msg_type, data)
+                
             except zmq.Again:
                 time.sleep(0.1)
             except Exception as e:
