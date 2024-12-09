@@ -9,7 +9,7 @@ from helperFunctions.encryptMessage import encrypt_message
 from helperFunctions.decryptMessage import decrypt_message
 from helperFunctions.generateKeys import generate_keys
 from helperFunctions.publicKey import public_key_handler
-
+from helperFunctions.verify_signature import verify_signature
 
 class SecurePeer:
     def __init__(self, my_port, peer_port, identity):
@@ -37,21 +37,19 @@ class SecurePeer:
         #Session specific
         self.symmetric_key = None
         self.other_public = None
-        self.our_seq = None
         self.peer_seq = None
         self.live_port = False
+        self.handshake_complete = False
         
+
         self.generate_keys()
 
     # Helo
     # INIT
-    # HANDSHAKE1
     # HANDSHAKE2
     # KEY
     # SEQ1 (SEND KEY AND SEQ NUMBER)
     # SEQ2
-    # TEST1
-    # TEST2
 
     # Public Key
     # - Ask for Public Key
@@ -59,6 +57,8 @@ class SecurePeer:
  
 
     #Toggle live port
+    def messagesReady(self):
+        return self.symmetric_key is not None and self.other_public is not None and self.handshake_complete
     def toggle_live_port(self):
         self.live_port = not self.live_port
     def get_live_port(self):
@@ -82,9 +82,11 @@ class SecurePeer:
         if initiate:
             # print(f"Sending public key to {self.identity}")
             self.socket.send_multipart([b"PUBLIC_KEY", public_pem])
+            print(f"Sent public key to {self.public_key} from {self.identity}")
         else:
             # print(f"Sending public key response to {self.identity}")
             self.socket.send_multipart([b"PUBLIC_KEY_RESPONSE", public_pem])
+            print(f"Sent public key response to {self.public_key} from {self.identity}")
 
     def listen_for_messages(self):
         while self.listening:
@@ -101,10 +103,12 @@ class SecurePeer:
 
                 if msg_type == b"MESSAGE" and self.symmetric_key:
                     decrypted = self.decrypt_message(data)
-                    print("\ndecrypted", decrypted)
+                    print("RECEIVED", decrypted)
                 elif msg_type == b"LIVE_PING" or msg_type == b"LIVE_PONG":
+                    self.toggle_live_port()
                     if msg_type == b"LIVE_PING":
                         self.live_ping(respond=True)
+                    elif msg_type == b"LIVE_PONG":
                         print("PING AND HANDSHAKE")
                         print("Asking for public key")
                         self.askForPublicKey(True)
@@ -113,9 +117,7 @@ class SecurePeer:
                         self.initiate_handshake()
                         time.sleep(0.5)
                         print("Handshake complete")
-                    else:
-                        print(self.identity, "ponged")
-                    self.toggle_live_port()
+                   
                 else:
                     public_key_handler(self, msg_type, data)
                 
@@ -127,6 +129,8 @@ class SecurePeer:
     def initiate_handshake(self):
         return initiate_handshake(self)
 
+    def verify_signature(self, data, peer_public_key):
+        return verify_signature(self, data, peer_public_key)
     
     def encrypt_message(self, message):
         return encrypt_message(self, message)

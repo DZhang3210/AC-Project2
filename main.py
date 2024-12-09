@@ -18,15 +18,16 @@ while not peer1.get_live_port():
 
 print("Live port found")
 
-time.sleep(10)
+while not peer1.messagesReady():
+    time.sleep(0.3)
+print("Handshake complete")
 
 print("Sending messages")
+print("(q to quit or type anything else to send message to send): ")
 while True:
-    sender = input("(q to quit or other to send): ")
-    if sender.lower() == 'q':
+    message = input("")
+    if message.lower() == "q":
         break
-        
-    message = input("Enter message: ")
     
     peer1.send_message(message)
 

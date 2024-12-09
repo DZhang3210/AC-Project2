@@ -1,5 +1,5 @@
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
-from .hash_message import hash_message, verify_hash
+from .hash_message import verify_hash
 import struct
 import time
 
@@ -8,6 +8,7 @@ def decrypt_message(self, encrypted_message):
         nonce = encrypted_message[:12]
         ct = encrypted_message[12:-48]  # Everything between nonce and hash
         hash = encrypted_message[-48:]  # Hash is 32 bytes
+        # print("decrypt hash", hash)
 
         # Verify the hash
         if not verify_hash(ct, self.symmetric_key, hash):
