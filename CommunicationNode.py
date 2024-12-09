@@ -40,6 +40,8 @@ class SecurePeer:
         self.peer_seq = None
         self.live_port = False
         self.handshake_complete = False
+        self.seq_number = None
+        self.other_seq_number = None
         
 
         self.generate_keys()
@@ -103,6 +105,7 @@ class SecurePeer:
 
                 if msg_type == b"MESSAGE" and self.symmetric_key:
                     decrypted = self.decrypt_message(data)
+                    
                     print("RECEIVED", decrypted)
                 elif msg_type == b"LIVE_PING" or msg_type == b"LIVE_PONG":
                     self.toggle_live_port()

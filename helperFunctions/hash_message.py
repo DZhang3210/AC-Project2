@@ -1,5 +1,6 @@
 from cryptography.hazmat.primitives import hmac, hashes
 import os  # for secure random generation
+from cryptography.hazmat.primitives.constant_time import bytes_eq
 
 def hash_message(message, hash_key):
     # Generate a random salt
@@ -24,4 +25,4 @@ def verify_hash(message, hash_key, salt_and_hash):
     h.update(message)
     computed_hash = h.finalize()
     
-    return computed_hash == stored_hash
+    return bytes_eq(computed_hash, stored_hash)

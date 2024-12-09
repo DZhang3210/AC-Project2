@@ -25,5 +25,6 @@ def decrypt_message(self, encrypted_message):
         # Use the instance's message_ttl
         if time.time() - timestamp > self.message_ttl:
             raise ValueError("Message is too old")
+        
 
         return message
